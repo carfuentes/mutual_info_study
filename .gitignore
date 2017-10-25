@@ -9,6 +9,9 @@ __pycache__/
 #txt files
 *.txt
 
+#Datasets
+Dataset*/
+
 # Distribution / packaging
 .Python
 env/
