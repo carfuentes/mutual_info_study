@@ -8,7 +8,6 @@ __pycache__/
 
 #txt files
 *.txt
-*.csv
 
 #Datasets
 Dataset*/
