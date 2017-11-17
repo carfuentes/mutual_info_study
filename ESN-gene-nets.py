@@ -140,36 +140,49 @@ def testing_gene_net_derivative_file(directory,file,a,b,c,n,i_max=80):
 # In[9]:
 
 
-def plot_MI_i(key,mi_dict,nrmse=True, single=True):
+def plot_dict_i(key,dict_i,nrmse=True, single=True):
     x=[]
     y=[]
     
     if nrmse:
-        point=min(mi_dict, key=mi_dict.get)
-        print("min",point)
+        point=min(dict_i, key=dict_i.get)
+        print(key,"=> min=",point)
     else:
-        point=max(mi_dict, key=mi_dict.get)
-        print("max",point)
+        point=max(dict_i, key=dict_i.get)
+        print(key,"=> max=",point)
         
-    for i,MI in mi_dict.items():
+    for i,value in dict_i.items():
         x.append(i)
-        y.append(MI)
+        y.append(value)
     
     plot(x,y,label=key)
-    plot(point,mi_dict[point],marker='o')
+    plot(point,dict_i[point],marker='o')
     
     if single:
         xlabel("i=[0,%d]"%(x[-1]))
-        ylabel("NRMSE(X(t-i), Y(t))")
+        
+        if nrmse:
+            ylabel("NRMSE(X(t-i), Y(t))")
+        else:
+            ylabel("MI(X(t-i), Y(t))")
 
 
 # In[10]:
 
 
-def plot_MI_by_file(MI_by_file):
-    for key in MI_by_file.keys():
-        plot_MI_i(key, MI_by_file[key])
+def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
+    for file in dict_by_file.keys():
+        plot_dict_i(file, dict_by_file[file],nrmse=nrmse,single=False)
     legend(loc='upper left')
+    xlabel("i=[0,%d]"%(len(dict_by_file[file].keys())-1))
+    
+    if nrmse:
+        ylabel("NRMSE(X(t-i), Y(t))")
+    else:
+        ylabel("MI(X(t-i), Y(t))")
+        
+    if save:
+        savefig("plots/nrmse_i_all_files/nrmse_all_n%d" %(n))
     show()
     
 
@@ -189,19 +202,19 @@ def plot_temporal_lines(u,Y,n,length,filename, save=True):
     show()
 
 
-# In[ ]:
+# In[12]:
 
 
 ##################################################################################
 
 
-# In[ ]:
+# In[13]:
 
 
 #                                  PARAMETERS                                    #
 
 
-# In[12]:
+# In[14]:
 
 
 # TRAINING AND TEST LENGHT
@@ -293,17 +306,17 @@ X_by_file, Y_by_file, NRMSE_by_file, MI_by_file=testing_gene_net_derivative("Dat
 # In[ ]:
 
 
-for n in [0,10,20,50,80,100]:
+##SINGLE FILE
+
+
+# In[16]:
+
+
+for n in [0,10,15,20,25,50,60,80]:
     X_by_file, Y_by_file, NRMSE_by_file,MI_by_file=testing_gene_net_derivative("Dataset1/", a,b,c,n)
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
-    plot_MI_by_file(MI_by_file)
-
-
-# In[ ]:
-
-
-##SINGLE FILE
+    plot_dict_by_file(NRMSE_by_file,n)
 
 
 # In[ ]:
@@ -316,7 +329,7 @@ for n in [0,10,20,50,80,100]:
 
 
 X,Y,nrmse_i,mi_i=testing_gene_net_derivative_file("Dataset1",csv_files[-1],a=a,b=b,c=c,n=20)
-plot_MI_i("DBTBS", nrmse_i,n=20)
+plot_dict_i("DBTBS", nrmse_i)
 show()
 
 
@@ -326,7 +339,7 @@ show()
 #rango de n
 
 
-# In[13]:
+# In[ ]:
 
 
 file=csv_files[-1]
@@ -337,7 +350,7 @@ for n in [0,15,20,25,30,50,60,80]:
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
-    plot_MI_i(filename, nrmse_i)
+    plot_dict_i(filename, nrmse_i)
     savefig("plots/nrmse_i/%s_n%d" %(filename,n))
     show()
     
