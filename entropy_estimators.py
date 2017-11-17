@@ -17,7 +17,7 @@ def entropy(x,k=3,base=2):
       x should be a list of vectors, e.g. x = [[1.3],[3.7],[5.1],[2.4]]
       if x is a one-dimensional scalar and we have four samples
   """
-  assert k <= len(x)-1, "Set k smaller than num. samples - 1"
+  assert k <= len(x)-1 #"Set k smaller than num. samples - 1"
   d = len(x[0])
   N = len(x)
   intens = 1e-10 #small noise to break degeneracy, see doc.
@@ -25,7 +25,7 @@ def entropy(x,k=3,base=2):
   tree = ss.cKDTree(x)
   nn = [tree.query(point,k+1,p=float('inf'))[0][k] for point in x]
   const = digamma(N)-digamma(k) + d*log(2)
-  return (const + d*np.mean(map(log,nn),dtype=np.float64))/log(base)
+  return (const + d*np.mean(list(map(log,nn)),dtype=np.float64))/log(base)
 
 def mi(x,y,k=3,base=2):
   """ Mutual information of x and y
