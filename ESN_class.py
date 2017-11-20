@@ -23,7 +23,8 @@ class ESN(object):
         self.Y=None
         self.x=np.zeros((self.res_size,1))
         self.x0=np.insert(np.random.rand(self.res_size)*10,0,[1.0,1.0,1.0])
-        self.decay=random_sampling_normal_from_range([1/15,1/60],(self.res_size,1))
+        #self.decay=random_sampling_normal_from_range([1/5,1/15],(self.res_size,1))
+        self.decay=np.random.rand((self.res_size,1))
         self.u=None
         self.x_act=None
 
@@ -82,7 +83,7 @@ class ESN(object):
         du_dt=-z-y
         dy_dt=u+a*y
         dz_dt=b+z*(u-c)
-        dx_dt= np.tanh( np.dot( self.Win, np.vstack((1,u)) ) + np.dot( self.W, x ) ) - (decay * x)
+        dx_dt= np.tanh( np.dot( self.Win, np.vstack((1,du_dt)) ) + np.dot( self.W, x ) ) - (decay * x)
         
         return np.insert(dx_dt,0,[du_dt,dy_dt,dz_dt])
         
