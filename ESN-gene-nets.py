@@ -34,7 +34,7 @@ import scipy
 from preprocessing_net import get_cyclic_net
 
 
-# In[27]:
+# In[4]:
 
 
 class ESN(object):
@@ -51,8 +51,8 @@ class ESN(object):
         self.Y=None
         self.x=np.zeros((self.res_size,1))
         self.x0=np.insert(np.random.rand(self.res_size),0,[1.0,1.0,1.0])
-        #self.decay=random_sampling_normal_from_range([1/5,1/15],(self.res_size,1))
-        self.decay=np.random.rand(self.res_size).reshape((self.res_size,1))
+        self.decay=random_sampling_normal_from_range([1/5,1/60],(self.res_size,1))
+        #self.decay=np.random.rand(self.res_size).reshape((self.res_size,1))
         self.u=None
         self.x_act=None
 
@@ -113,8 +113,7 @@ class ESN(object):
         du_dt=-z-y
         dy_dt=u+a*y
         dz_dt=b+z*(u-c)
-        dx_dt=(np.tanh( np.dot( self.Win, np.vstack((1,du_dt+20)) ) + np.dot( self.W, x ) ) - (decay * x))+1
-        
+        dx_dt=(np.tanh( np.dot( self.Win, np.vstack((1,du_dt+20)) ) + np.dot( self.W, x ) )+1 - (decay * x))
         return np.insert(dx_dt,0,[du_dt,dy_dt,dz_dt])
         
     def calculate_weights(self, data, init_len, train_len,beta=1e-8 ):
@@ -152,7 +151,7 @@ class ESN(object):
         return self.Y
 
 
-# In[5]:
+# In[ ]:
 
 
 (np.random.rand(13)*np.random.rand(13)).shape
@@ -170,7 +169,7 @@ class ESN(object):
 #                                   FUNCTIONS                                    #
 
 
-# In[6]:
+# In[5]:
 
 
 def testing_gene_net(directory,input_data,data):
@@ -192,7 +191,7 @@ def testing_gene_net(directory,input_data,data):
     return MI_by_file
 
 
-# In[7]:
+# In[6]:
 
 
 def testing_gene_net_file(directory,file):
@@ -208,7 +207,7 @@ def testing_gene_net_file(directory,file):
     return memory_capacity_n(net.Y, data,100)
 
 
-# In[8]:
+# In[7]:
 
 
 def testing_gene_net_derivative(directory,a,b,c,n,i_max=80):
@@ -245,7 +244,7 @@ def testing_gene_net_derivative(directory,a,b,c,n,i_max=80):
   
 
 
-# In[9]:
+# In[8]:
 
 
 def testing_gene_net_derivative_file(directory,file,a,b,c,n,i_max=80):
@@ -273,7 +272,7 @@ def testing_gene_net_derivative_file(directory,file,a,b,c,n,i_max=80):
     return X,Y,nrmse_i,mi_i
 
 
-# In[10]:
+# In[9]:
 
 
 def plot_dict_i(key,dict_i,nrmse=True, single=True):
@@ -303,7 +302,7 @@ def plot_dict_i(key,dict_i,nrmse=True, single=True):
             ylabel("MI(X(t-i), Y(t))")
 
 
-# In[11]:
+# In[10]:
 
 
 def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
@@ -323,7 +322,7 @@ def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
     
 
 
-# In[12]:
+# In[11]:
 
 
 def plot_temporal_lines(u,Y,n,length,filename, save=True):
@@ -334,11 +333,11 @@ def plot_temporal_lines(u,Y,n,length,filename, save=True):
     title('Target and generated signals $y(t)$ starting at $t=0$ until $t=%s$ with a delay of n=%d ' %(length,n))
     legend(['Target signal', 'Free-running predicted signal'])
     if save:
-        savefig("plots/input-vs-output/%s_len%d_n%d" %(filename,length,n))
+        savefig("plots/input-vs-output/%s_len%d_n%d_decay_random" %(filename,length,n))
     show()
 
 
-# In[13]:
+# In[12]:
 
 
 def estimated_autocorrelation(x):
@@ -355,19 +354,19 @@ def estimated_autocorrelation(x):
     return result
 
 
-# In[ ]:
+# In[13]:
 
 
 ##################################################################################
 
 
-# In[ ]:
+# In[14]:
 
 
 #                                  PARAMETERS                                    #
 
 
-# In[14]:
+# In[15]:
 
 
 # TRAINING AND TEST LENGHT
@@ -456,16 +455,10 @@ print("With derivatives")
 X_by_file, Y_by_file, NRMSE_by_file, MI_by_file=testing_gene_net_derivative("Dataset1/", a,b,c,0)
 
 
-# In[ ]:
+# In[17]:
 
 
-##SINGLE FILE
-
-
-# In[28]:
-
-
-for n in [0,10,15,20,25,50,60,80]:
+for n in [0,25,30,60,80]:
     X_by_file, Y_by_file, NRMSE_by_file,MI_by_file=testing_gene_net_derivative("Dataset1/", a,b,c,n)
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
@@ -475,6 +468,7 @@ for n in [0,10,15,20,25,50,60,80]:
 # In[ ]:
 
 
+##SINGLE FILE
 #una n
 
 
@@ -492,27 +486,27 @@ show()
 #rango de n
 
 
-# In[23]:
+# In[ ]:
 
 
 file=csv_files[-1]
 filename=file[file.index("list")+5:file.index(".csv")]
 
-for n in [0,15,20,25,30,50,60,80]:
+for n in [0,25,30]:
     X,Y,nrmse_i,mi_i=testing_gene_net_derivative_file("Dataset1",file,a=a,b=b,c=c,n=n)
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
     plot_dict_i(filename, nrmse_i)
-    #savefig("plots/nrmse_i/%s_n%d" %(filename,n))
+    savefig("plots/nrmse_i/%s_n%d_decay_random" %(filename,n))
     show()
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-    plot_temporal_lines(X,Y, n, testLen,filename, save=False)
+    plot_temporal_lines(X,Y, n, testLen,filename)
     
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-    plot_temporal_lines(X,Y, n, 50,filename,save=False)
+    plot_temporal_lines(X,Y, n, 50,filename)
    
 
 
