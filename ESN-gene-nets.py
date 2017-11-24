@@ -113,7 +113,7 @@ class ESN(object):
         du_dt=-z-y
         dy_dt=u+a*y
         dz_dt=b+z*(u-c)
-        dx_dt=(np.tanh( np.dot( self.Win, np.vstack((1,du_dt+20)) ) + np.dot( self.W, x ) )+1 - (decay * x))
+        dx_dt=0.5*(np.tanh( np.dot( self.Win, np.vstack((1,u+20)) ) + np.dot( self.W, x ) )+1) - (decay * x)
         return np.insert(dx_dt,0,[du_dt,dy_dt,dz_dt])
         
     def calculate_weights(self, data, init_len, train_len,beta=1e-8 ):
@@ -151,25 +151,25 @@ class ESN(object):
         return self.Y
 
 
-# In[ ]:
+# In[5]:
 
 
 (np.random.rand(13)*np.random.rand(13)).shape
 
 
-# In[ ]:
+# In[6]:
 
 
 ##################################################################################
 
 
-# In[ ]:
+# In[7]:
 
 
 #                                   FUNCTIONS                                    #
 
 
-# In[5]:
+# In[8]:
 
 
 def testing_gene_net(directory,input_data,data):
@@ -191,7 +191,7 @@ def testing_gene_net(directory,input_data,data):
     return MI_by_file
 
 
-# In[6]:
+# In[9]:
 
 
 def testing_gene_net_file(directory,file):
@@ -207,7 +207,7 @@ def testing_gene_net_file(directory,file):
     return memory_capacity_n(net.Y, data,100)
 
 
-# In[7]:
+# In[10]:
 
 
 def testing_gene_net_derivative(directory,a,b,c,n,i_max=80):
@@ -244,7 +244,7 @@ def testing_gene_net_derivative(directory,a,b,c,n,i_max=80):
   
 
 
-# In[8]:
+# In[11]:
 
 
 def testing_gene_net_derivative_file(directory,file,a,b,c,n,i_max=80):
@@ -272,7 +272,7 @@ def testing_gene_net_derivative_file(directory,file,a,b,c,n,i_max=80):
     return X,Y,nrmse_i,mi_i
 
 
-# In[9]:
+# In[12]:
 
 
 def plot_dict_i(key,dict_i,nrmse=True, single=True):
@@ -302,7 +302,7 @@ def plot_dict_i(key,dict_i,nrmse=True, single=True):
             ylabel("MI(X(t-i), Y(t))")
 
 
-# In[10]:
+# In[13]:
 
 
 def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
@@ -322,7 +322,7 @@ def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
     
 
 
-# In[11]:
+# In[14]:
 
 
 def plot_temporal_lines(u,Y,n,length,filename, save=True):
@@ -337,7 +337,7 @@ def plot_temporal_lines(u,Y,n,length,filename, save=True):
     show()
 
 
-# In[12]:
+# In[15]:
 
 
 def estimated_autocorrelation(x):
@@ -354,19 +354,19 @@ def estimated_autocorrelation(x):
     return result
 
 
-# In[13]:
+# In[16]:
 
 
 ##################################################################################
 
 
-# In[14]:
+# In[17]:
 
 
 #                                  PARAMETERS                                    #
 
 
-# In[15]:
+# In[18]:
 
 
 # TRAINING AND TEST LENGHT
@@ -455,10 +455,10 @@ print("With derivatives")
 X_by_file, Y_by_file, NRMSE_by_file, MI_by_file=testing_gene_net_derivative("Dataset1/", a,b,c,0)
 
 
-# In[17]:
+# In[19]:
 
 
-for n in [0,25,30,60,80]:
+for n in [0,2,5,10,25]:
     X_by_file, Y_by_file, NRMSE_by_file,MI_by_file=testing_gene_net_derivative("Dataset1/", a,b,c,n)
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))

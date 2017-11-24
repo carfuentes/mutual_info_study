@@ -10,7 +10,7 @@ __pycache__/
 *.txt
 
 #notebooks
-*.ipynb
+#*.ipynb
 
 #Datasets
 Dataset*/
