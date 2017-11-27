@@ -11,13 +11,13 @@ from sklearn.metrics import mean_squared_error
 import os
 import scipy
 from math import sqrt
+import numba
 
 
 # In[2]:
 
 
 from preprocessing_net import get_cyclic_net
-from ESN_class import ESN
 from mutual_info import memory_capacity_n
 from nrmse_calc import nrmse, nrmse_n
 
@@ -37,6 +37,12 @@ from preprocessing_net import get_cyclic_net
 # In[4]:
 
 
+#NUMBA
+
+
+# In[34]:
+
+
 class ESN(object):
     def __init__(self, filename, in_size, out_size, spectral_radius):
         self.res_size= self.build_adj_weighted_matrix(filename).shape[0]
@@ -50,9 +56,10 @@ class ESN(object):
         self.X=None
         self.Y=None
         self.x=np.zeros((self.res_size,1))
-        self.x0=np.insert(np.random.rand(self.res_size),0,[1.0,1.0,1.0])
-        self.decay=random_sampling_normal_from_range([1/5,1/60],(self.res_size,1))
-        #self.decay=np.random.rand(self.res_size).reshape((self.res_size,1))
+        self.x0_e=np.random.rand(self.res_size)
+        self.x0=np.insert(np.random.rand(self.res_size)*10,0,[1.0,1.0,1.0])
+        self.u0=0
+        self.decay=np.random.rand(self.res_size).reshape((self.res_size,1))
         self.u=None
         self.x_act=None
 
@@ -93,10 +100,8 @@ class ESN(object):
         self.X=np.zeros((self.res_size+self.in_size+1, train_len-init_len))
         t=np.arange(train_len+test_len)
         uyz_x=scipy.integrate.odeint(self.dx_dt,self.x0,t,args=(a,b,c,self.decay))
-        self.u=uyz_x[:,0]+20
+        self.u=uyz_x[:,0]**2
         self.x_act=uyz_x[:,3:]
-        print(np.any(self.x_act<0))
-        plot( t[0:200],self.x_act[0:200] )
         for t in range(init_len,train_len):
             x_concat=self.x_act[t,:].reshape(self.x_act[t,:].shape[0],1)
             u_concat=self.u[t]
@@ -113,8 +118,48 @@ class ESN(object):
         du_dt=-z-y
         dy_dt=u+a*y
         dz_dt=b+z*(u-c)
-        dx_dt=0.5*(np.tanh( np.dot( self.Win, np.vstack((1,u+20)) ) + np.dot( self.W, x ) )+1) - (decay * x)
+        dx_dt=0.5*(np.tanh( np.dot( self.Win, np.vstack((1,u**2)) ) + np.dot( self.W, x ) )+1) - (decay * x)
         return np.insert(dx_dt,0,[du_dt,dy_dt,dz_dt])
+    
+    def dx_dt_euler(self, x,u):
+        x_act=0.5*(np.tanh( np.dot( self.Win, np.vstack((1,u)) ) + np.dot( self.W, x.reshape(self.res_size,1) ) )+1) - (self.decay * x.reshape(self.res_size,1))
+        return x_act.reshape(self.res_size)
+    
+    def colored_noise_euler_integration(self, x_0, u_0, tau, c, t_stop, dt=0.01):
+        mu=np.exp(-dt/tau)
+        sigma= sqrt( ((c * tau)/2) * (1-mu**2) )
+    
+    
+        t = np.linspace(0, t_stop, int(t_stop/dt))
+    
+        x=np.zeros((len(t),self.res_size))
+        x[0,:]=x_0
+
+        u = u_0 * np.ones_like(t)
+    
+        for i in range(0, len(t) - 1):
+            u[i+1] = u[i]* mu + sigma * np.random.normal()
+            x[i+1,:] = x[i,:] + dt * self.dx_dt_euler(x[i,:], u[i+1])
+            
+        return u,x
+
+    def collect_states_euler(self, tau, c, init_len, train_len, test_len,dt=0.01):
+        self.X=np.zeros((self.res_size+self.in_size+1, train_len-init_len))
+        t_stop=train_len+test_len
+        self.u, self.x_act=self.colored_noise_euler_integration(self.x0_e, self.u0, tau, c, t_stop, dt)
+
+        
+        indexes=[int(t/dt) for t in range(0,t_stop)]
+        self.u=self.u[indexes]
+        self.x_act[indexes]
+        
+        for t in range(init_len,train_len):
+            x_concat=self.x_act[t,:].reshape(self.x_act[t,:].shape[0],1)
+            u_concat=self.u[t]
+            self.X[:,t-init_len]= np.vstack((1,u_concat,x_concat))[:,0]
+               
+        return self.X
+        
         
     def calculate_weights(self, data, init_len, train_len,beta=1e-8 ):
         Y=data[None,init_len+1:train_len+1]
@@ -128,6 +173,7 @@ class ESN(object):
         self.Wout= np.dot ( np.dot(Y, X_T), np.linalg.inv(np.dot(self.X,X_T) + beta * np.eye(self.res_size+self.in_size+1))) #w= y*x_t*(x*x_t + beta*I)^-1
         return self.Wout
     
+    
     def run_generative(self, data, test_len, train_len,a=0.3):
         self.Y = np.zeros((self.out_size,test_len))
         u = data[train_len]
@@ -138,7 +184,7 @@ class ESN(object):
             u = data[trainLen+t+1]
             #u =y
     
-    def run_predictive_derivative(self, a,b,c, test_len, train_len):
+    def run_predictive_derivative(self, test_len, train_len):
         self.Y = np.zeros((self.out_size,test_len))
         
         for t in range(train_len,train_len+test_len):
@@ -151,25 +197,25 @@ class ESN(object):
         return self.Y
 
 
-# In[5]:
+# In[6]:
 
 
 (np.random.rand(13)*np.random.rand(13)).shape
 
 
-# In[6]:
+# In[7]:
 
 
 ##################################################################################
 
 
-# In[7]:
+# In[8]:
 
 
 #                                   FUNCTIONS                                    #
 
 
-# In[8]:
+# In[9]:
 
 
 def testing_gene_net(directory,input_data,data):
@@ -191,7 +237,7 @@ def testing_gene_net(directory,input_data,data):
     return MI_by_file
 
 
-# In[9]:
+# In[10]:
 
 
 def testing_gene_net_file(directory,file):
@@ -207,7 +253,7 @@ def testing_gene_net_file(directory,file):
     return memory_capacity_n(net.Y, data,100)
 
 
-# In[10]:
+# In[11]:
 
 
 def testing_gene_net_derivative(directory,a,b,c,n,i_max=80):
@@ -228,7 +274,7 @@ def testing_gene_net_derivative(directory,a,b,c,n,i_max=80):
         net.initialize()
         net.collect_states_derivative(a,b,c,initLen,trainLen,testLen)
         net.calculate_weights_derivative(initLen,trainLen,n)
-        net.run_predictive_derivative(a,b,c,testLen,trainLen)
+        net.run_predictive_derivative(testLen,trainLen)
         
         #Calculate output
         X_by_file[filename]=net.u
@@ -244,7 +290,7 @@ def testing_gene_net_derivative(directory,a,b,c,n,i_max=80):
   
 
 
-# In[11]:
+# In[12]:
 
 
 def testing_gene_net_derivative_file(directory,file,a,b,c,n,i_max=80):
@@ -257,7 +303,7 @@ def testing_gene_net_derivative_file(directory,file,a,b,c,n,i_max=80):
     net.initialize()
     net.collect_states_derivative(a,b,c,initLen,trainLen,testLen)
     net.calculate_weights_derivative(initLen,trainLen,n)
-    net.run_predictive_derivative(a,b,c,testLen,trainLen)
+    net.run_predictive_derivative(testLen,trainLen)
     
     #Calculate output
     X=net.u
@@ -272,7 +318,35 @@ def testing_gene_net_derivative_file(directory,file,a,b,c,n,i_max=80):
     return X,Y,nrmse_i,mi_i
 
 
-# In[12]:
+# In[28]:
+
+
+def testing_gene_net_euler_file(directory,file,tau,c,n,i_max=80):
+    #init
+    print(file)
+    filename=file[file.index("list")+5:file.index(".csv")]
+    
+    #Run network
+    net=ESN(os.path.join(directory, file),1,1,0.95)
+    net.initialize()
+    net.collect_states_euler(tau,c,initLen,trainLen,testLen,dt=0.01)
+    net.calculate_weights_derivative(initLen,trainLen,n)
+    net.run_predictive_derivative(testLen,trainLen)
+    
+    #Calculate output
+    X=net.u
+    Y=net.Y
+    mi_i=memory_capacity_n(net.Y, net.u,n)
+    nrmse_i=nrmse_n(net.Y,net.u,i_max,errorLen,trainLen)
+    
+    #prints
+    print(nrmse(net.Y[0,0:errorLen],net.u[trainLen+1:trainLen+errorLen+1]))
+    print(net.res_size, " FINISHED")
+    
+    return X,Y,nrmse_i,mi_i
+
+
+# In[14]:
 
 
 def plot_dict_i(key,dict_i,nrmse=True, single=True):
@@ -302,7 +376,7 @@ def plot_dict_i(key,dict_i,nrmse=True, single=True):
             ylabel("MI(X(t-i), Y(t))")
 
 
-# In[13]:
+# In[15]:
 
 
 def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
@@ -322,7 +396,7 @@ def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
     
 
 
-# In[14]:
+# In[16]:
 
 
 def plot_temporal_lines(u,Y,n,length,filename, save=True):
@@ -337,7 +411,7 @@ def plot_temporal_lines(u,Y,n,length,filename, save=True):
     show()
 
 
-# In[15]:
+# In[17]:
 
 
 def estimated_autocorrelation(x):
@@ -354,19 +428,19 @@ def estimated_autocorrelation(x):
     return result
 
 
-# In[16]:
+# In[18]:
 
 
 ##################################################################################
 
 
-# In[17]:
+# In[19]:
 
 
 #                                  PARAMETERS                                    #
 
 
-# In[18]:
+# In[20]:
 
 
 # TRAINING AND TEST LENGHT
@@ -382,6 +456,10 @@ csv_files=['network_edge_list_ENCODE.csv', 'network_edge_list_modENCODE.csv', 'n
 a=0.1
 b=0.1
 c=14
+
+#parameters COLORED NOISE
+tau = 1
+c=1
 
 
 # In[ ]:
@@ -439,7 +517,70 @@ net.X[:,7]
 # In[ ]:
 
 
-#                             RESULTS                                            #
+#                             RESULTS  NOISE                                         #
+
+
+# In[ ]:
+
+
+#una n
+
+
+# In[25]:
+
+
+X,Y,nrmse_i,mi_i=testing_gene_net_euler_file("Dataset1",csv_files[-1],tau=tau,c=c,n=0)
+plot_dict_i("DBTBS", nrmse_i)
+show()
+
+
+# In[26]:
+
+
+X
+
+
+# In[27]:
+
+
+plot_dict_i("DBTBS", nrmse_i)
+show()
+
+
+# In[ ]:
+
+
+# rango de n
+
+
+# In[35]:
+
+
+file=csv_files[-1]
+filename=file[file.index("list")+5:file.index(".csv")]
+
+for n in [0,25,30]:
+    X,Y,nrmse_i,mi_i=testing_gene_net_euler_file("Dataset1",file,tau=tau,c=c,n=n)
+    
+    figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
+    title("n="+str(n))
+    plot_dict_i(filename, nrmse_i)
+    savefig("plots/nrmse_i/%s_n%d_decay_random" %(filename,n))
+    show()
+    
+    figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
+    plot_temporal_lines(X,Y, n, testLen,filename)
+    
+    
+    figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
+    plot_temporal_lines(X,Y, n, 50,filename)
+   
+
+
+# In[ ]:
+
+
+#                             RESULTS  ROSSLER                                          #
 
 
 # In[ ]:
@@ -455,7 +596,7 @@ print("With derivatives")
 X_by_file, Y_by_file, NRMSE_by_file, MI_by_file=testing_gene_net_derivative("Dataset1/", a,b,c,0)
 
 
-# In[19]:
+# In[ ]:
 
 
 for n in [0,2,5,10,25]:
