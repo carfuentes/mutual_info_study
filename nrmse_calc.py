@@ -13,6 +13,6 @@ def nrmse(y,x):
 def nrmse_n(Yt, Xt,i_max,errorLen,trainLen):
     NRMSE_i={}
     for i in range(i_max+1):
-        NRMSE_i[i]=nrmse(Yt[0,0:errorLen],Xt[trainLen+1-i:trainLen+errorLen+1-i]) 
+        NRMSE_i[i]=nrmse(Yt[0,0:errorLen],Xt[trainLen-i:trainLen+errorLen-i]) 
     
     return NRMSE_i
