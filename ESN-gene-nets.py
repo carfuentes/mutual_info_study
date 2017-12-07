@@ -40,7 +40,7 @@ from preprocessing_net import get_cyclic_net
 #NUMBA
 
 
-# In[5]:
+# In[35]:
 
 
 class ESN(object):
@@ -220,20 +220,24 @@ class ESN(object):
         self.Wout= np.dot ( np.dot(Y, X_T), np.linalg.inv(np.dot(self.X,X_T) + beta * np.eye(self.res_size+self.in_size+1))) #w= y*x_t*(x*x_t + beta*I)^-1
         return self.Wout
     
+    def calculate_weights_generative(self,init_len, train_len, n, beta=1e-8 ):
+        Y=np.array([self.u[init_len+1-n:train_len+1-n]])
+        X_T=self.X.T
+        self.Wout= np.dot ( np.dot(Y, X_T), np.linalg.inv(np.dot(self.X,X_T) + beta * np.eye(self.res_size+self.in_size+1))) #w= y*x_t*(x*x_t + beta*I)^-1
+        return self.Wout
     
-    def run_generative(self, data, test_len, train_len,a=0.3):
+    
+    def run_generative_derivative(self,test_len, train_len):
         self.Y = np.zeros((self.out_size,test_len))
-        u = data[train_len]
-        for t in range(test_len):
-            self.x = (1-a)*self.x + a*np.tanh( np.dot( self.Win, np.vstack((1,u)) ) + np.dot( self.W, self.x ) ) 
-            y = np.dot( self.Wout, np.vstack((1,u,self.x)) )
-            self.Y[:,t] = y
-            u = data[trainLen+t+1]
-            #u =y
+        u_concat = self.u[train_len]
+        for t in range(train_len,train_len+test_len):
+            x_concat=self.x_act[t,:].reshape(self.x_act[t,:].shape[0],1)
+            y = np.dot( self.Wout, np.vstack((1,u_concat,x_concat)) )
+            self.Y[:,t-train_len] = y
+            u_concat=y
     
     def run_predictive_derivative(self, test_len, train_len):
         self.Y = np.zeros((self.out_size,test_len))
-        
         for t in range(train_len,train_len+test_len):
             x_concat=self.x_act[t,:].reshape(self.x_act[t,:].shape[0],1)
             u_concat=self.u[t]
@@ -437,6 +441,34 @@ def testing_gene_net_euler_rossler_file(directory,file,a,b,c,n,i_max=80):
     return X,Y,nrmse_i,mi_i
 
 
+# In[37]:
+
+
+def testing_gene_net_euler_rossler_file_generative(directory,file,a,b,c,n,i_max=80):
+    #init
+    print(file)
+    filename=file[file.index("list")+5:file.index(".csv")]
+    
+    #Run network
+    net=ESN(os.path.join(directory, file),1,1,0.95)
+    net.initialize()
+    net.collect_states_euler_rossler(a,b,c,initLen,trainLen,testLen,dt=0.01)
+    net.calculate_weights_derivative(initLen,trainLen,n)
+    net.run_generative_derivative(testLen,trainLen)
+    
+    #Calculate output
+    X=net.u
+    Y=net.Y
+    mi_i=memory_capacity_n(net.Y, net.u,n)
+    nrmse_i=nrmse_n(net.Y,net.u,i_max,errorLen,trainLen)
+    
+    #prints
+    print(nrmse(net.Y[0,0:errorLen],net.u[trainLen+1:trainLen+errorLen+1]))
+    print(net.res_size, " FINISHED")
+    
+    return X,Y,nrmse_i,mi_i
+
+
 # In[15]:
 
 
@@ -482,7 +514,7 @@ array.shape
 array[:,8799]
 
 
-# In[20]:
+# In[17]:
 
 
 def testing_gene_net_euler_rossler(directory,a,b,c,n,i_max=80):
@@ -519,7 +551,7 @@ def testing_gene_net_euler_rossler(directory,a,b,c,n,i_max=80):
   
 
 
-# In[21]:
+# In[18]:
 
 
 def plot_dict_i(key,dict_i,nrmse=True, single=True):
@@ -549,7 +581,7 @@ def plot_dict_i(key,dict_i,nrmse=True, single=True):
             ylabel("MI(X(t-i), Y(t))")
 
 
-# In[22]:
+# In[19]:
 
 
 def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
@@ -569,7 +601,7 @@ def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
     
 
 
-# In[41]:
+# In[20]:
 
 
 def plot_temporal_lines(u,Y,n,length,filename, save=True):
@@ -584,7 +616,7 @@ def plot_temporal_lines(u,Y,n,length,filename, save=True):
     show()
 
 
-# In[24]:
+# In[21]:
 
 
 def estimated_autocorrelation(x):
@@ -601,19 +633,19 @@ def estimated_autocorrelation(x):
     return result
 
 
-# In[25]:
+# In[22]:
 
 
 ##################################################################################
 
 
-# In[26]:
+# In[23]:
 
 
 #                                  PARAMETERS                                    #
 
 
-# In[27]:
+# In[24]:
 
 
 # TRAINING AND TEST LENGHT
@@ -735,7 +767,7 @@ file=csv_files[3]
 filename=file[file.index("list")+5:file.index(".csv")]
 
 for n in [0,1,2,5,10]:
-    X,Y,nrmse_i,mi_i=testing_gene_net_euler_file("Dataset1",file,tau=200,c=1,n=n)
+    X,Y,nrmse_i,mi_i=testing_gene_net_euler_file("Dataset1",file,tau=20,c=1,n=n)
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
@@ -865,7 +897,7 @@ for n in [0,1,2,3,25,30]:
    
 
 
-# In[44]:
+# In[38]:
 
 
 file=csv_files[3]
@@ -873,6 +905,30 @@ filename=file[file.index("list")+5:file.index(".csv")]
 
 for n in [0,1,2,5,10,20]:
     X,Y,nrmse_i,mi_i=testing_gene_net_euler_rossler_file("Dataset1",file,a,b,c,n=n)
+    
+    figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
+    title("n="+str(n))
+    plot_dict_i(filename, nrmse_i)
+    #savefig("plots/nrmse_i/%s_n%d_decay_random" %(filename,n))
+    show()
+    
+    figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
+    plot_temporal_lines(X,Y, n, testLen,filename, save=False)
+    
+    
+    figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
+    plot_temporal_lines(X,Y, n, 50,filename, save=False)
+   
+
+
+# In[39]:
+
+
+file=csv_files[3]
+filename=file[file.index("list")+5:file.index(".csv")]
+
+for n in [0,1,2,5,10,20]:
+    X,Y,nrmse_i,mi_i=testing_gene_net_euler_rossler_file_generative("Dataset1",file,a,b,c,n=n)
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
@@ -899,15 +955,15 @@ for n in [1,0,2,5,10,25]:
     plot_dict_by_file(NRMSE_by_file,n,save=False)
 
 
-# In[ ]:
+# In[28]:
 
 
 #MUTUAL INFO
-file=csv_files[-1]
+file=csv_files[3]
 filename=file[file.index("list")+5:file.index(".csv")]
 
 for n in [0,15,20,25,30,50,60,80]:
-    X,Y,nrmse_i,mi_i=testing_gene_net_derivative_file("Dataset1",file,a=a,b=b,c=c,n=n)
+    X,Y,nrmse_i,mi_i=testing_gene_net_euler_rossler_file("Dataset1",file,a=a,b=b,c=c,n=n)
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
