@@ -40,7 +40,7 @@ from preprocessing_net import get_cyclic_net
 #NUMBA
 
 
-# In[35]:
+# In[5]:
 
 
 class ESN(object):
@@ -296,6 +296,7 @@ def testing_gene_net(directory,input_data,data):
         net.collect_states(input_data,initLen,trainLen)
         net.calculate_weights(input_data,initLen,trainLen)
         net.run_generative(input_data,testLen,trainLen)
+      
         MI_by_file[filename]=memory_capacity_n(net.Y, data,100)
         nrmse= sqrt(mean_squared_error(data[trainLen+1:trainLen+errorLen+1],net.Y[0,0:errorLen])/np.std(net.Y[0,0:errorLen]))
         print(net.res_size, 'NRMSE = ' + str( nrmse ))
@@ -406,6 +407,10 @@ def testing_gene_net_euler_file(directory,file,tau,c,n,i_max=80):
     mi_i=memory_capacity_n(net.Y, net.u,n)
     nrmse_i=nrmse_n(net.Y,net.u,i_max,errorLen,trainLen)
     
+    #plot reservoir units activations
+    plot(net.X[2:20,100:200].T)
+    show()
+    
     #prints
     print(nrmse(net.Y[0,0:errorLen],net.u[trainLen+1:trainLen+errorLen+1]))
     print(net.res_size, " FINISHED")
@@ -441,7 +446,7 @@ def testing_gene_net_euler_rossler_file(directory,file,a,b,c,n,i_max=80):
     return X,Y,nrmse_i,mi_i
 
 
-# In[37]:
+# In[15]:
 
 
 def testing_gene_net_euler_rossler_file_generative(directory,file,a,b,c,n,i_max=80):
@@ -469,7 +474,7 @@ def testing_gene_net_euler_rossler_file_generative(directory,file,a,b,c,n,i_max=
     return X,Y,nrmse_i,mi_i
 
 
-# In[15]:
+# In[16]:
 
 
 def testing_gene_net_euler(directory,tau,c,n,i_max=80):
@@ -506,7 +511,7 @@ def testing_gene_net_euler(directory,tau,c,n,i_max=80):
   
 
 
-# In[16]:
+# In[17]:
 
 
 array=np.zeros((18,trainLen-initLen))
@@ -514,7 +519,7 @@ array.shape
 array[:,8799]
 
 
-# In[17]:
+# In[18]:
 
 
 def testing_gene_net_euler_rossler(directory,a,b,c,n,i_max=80):
@@ -551,7 +556,7 @@ def testing_gene_net_euler_rossler(directory,a,b,c,n,i_max=80):
   
 
 
-# In[18]:
+# In[19]:
 
 
 def plot_dict_i(key,dict_i,nrmse=True, single=True):
@@ -581,10 +586,10 @@ def plot_dict_i(key,dict_i,nrmse=True, single=True):
             ylabel("MI(X(t-i), Y(t))")
 
 
-# In[19]:
+# In[20]:
 
 
-def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
+def plot_dict_by_file(dict_by_file,n,tau,folder,nrmse=True,save=True):
     for file in dict_by_file.keys():
         plot_dict_i(file, dict_by_file[file],nrmse=nrmse,single=False)
     legend(loc='upper left')
@@ -596,15 +601,15 @@ def plot_dict_by_file(dict_by_file,n,nrmse=True,save=True):
         ylabel("MI(X(t-i), Y(t))")
         
     if save:
-        savefig("plots/nrmse_i_all_files/nrmse_all_n%d" %(n))
+        savefig("plots/nrmse_i_all_files/%s/nrmse_all_n%d_tau_%s" %(folder,n,str(tau)))
     show()
     
 
 
-# In[20]:
+# In[21]:
 
 
-def plot_temporal_lines(u,Y,n,length,filename, save=True):
+def plot_temporal_lines(u,Y,n,length,filename, tau,folder,save=True):
     plot( u[trainLen-n:trainLen+length-n], 'g' )
     plot( Y.T[0:length], 'b' )
     xlabel("time")
@@ -612,11 +617,11 @@ def plot_temporal_lines(u,Y,n,length,filename, save=True):
     title('Target and generated signals $y(t)$ starting at $t=0$ until $t=%s$ with a delay of n=%d ' %(length,n))
     legend(['Target signal', 'Free-running predicted signal'])
     if save:
-        savefig("plots/input-vs-output/%s_len%d_n%d_decay_random" %(filename,length,n))
+        savefig("plots/input-vs-output/%s/%s_len%d_n%d_tau%s" %(folder,filename,length,n,str(tau)))
     show()
 
 
-# In[21]:
+# In[22]:
 
 
 def estimated_autocorrelation(x):
@@ -633,19 +638,19 @@ def estimated_autocorrelation(x):
     return result
 
 
-# In[22]:
+# In[23]:
 
 
 ##################################################################################
 
 
-# In[23]:
+# In[24]:
 
 
 #                                  PARAMETERS                                    #
 
 
-# In[24]:
+# In[32]:
 
 
 # TRAINING AND TEST LENGHT
@@ -660,26 +665,26 @@ csv_files=['network_edge_list_ENCODE.csv', 'network_edge_list_modENCODE.csv', 'n
 #parameters ROSSLER
 a=0.1
 b=0.1
-c_r=14
+c=14
 
 #parameters COLORED NOISE
-tau = 100
-c=10
+tau = 150
+c_n=0.01
 
 
-# In[28]:
+# In[ ]:
 
 
 ##################################################################################
 
 
-# In[29]:
+# In[ ]:
 
 
 #                                   TESTEOS                                      #
 
 
-# In[30]:
+# In[ ]:
 
 
 # TESTEO get_cyclic_net
@@ -687,7 +692,7 @@ G=get_cyclic_net(os.path.join("Dataset1/", "network_edge_list_modENCODE.csv"))
 len(G.nodes())
 
 
-# In[31]:
+# In[ ]:
 
 
 #TESTEO adjacency matrix
@@ -695,7 +700,7 @@ net=ESN(os.path.join("Dataset1/", "network_edge_list_DBTBS.csv"),1,1,0.95)
 net.W0
 
 
-# In[32]:
+# In[ ]:
 
 
 #TESTEO initialize
@@ -704,7 +709,7 @@ print(net.W.shape)
 print(max(abs(scipy.linalg.eig(net.W)[0])))
 
 
-# In[33]:
+# In[ ]:
 
 
 #TESTEO collect states
@@ -713,19 +718,19 @@ net.X.shape
 net.X[:,7]
 
 
-# In[34]:
+# In[ ]:
 
 
 ##################################################################################
 
 
-# In[35]:
+# In[ ]:
 
 
 #                             RESULTS  NOISE                                         #
 
 
-# In[36]:
+# In[ ]:
 
 
 #una n
@@ -760,27 +765,27 @@ show()
 # rango de n
 
 
-# In[42]:
+# In[28]:
 
 
-file=csv_files[3]
+file=csv_files[0]
 filename=file[file.index("list")+5:file.index(".csv")]
 
-for n in [0,1,2,5,10]:
-    X,Y,nrmse_i,mi_i=testing_gene_net_euler_file("Dataset1",file,tau=20,c=1,n=n)
-    
+for n in [0,1,2,5,50]:
+    X,Y,nrmse_i,mi_i=testing_gene_net_euler_file("Dataset1",file,tau=tau,c=c_n,n=n)
+    print(tau,c_n)
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
     plot_dict_i(filename, nrmse_i)
-    #savefig("plots/nrmse_i/%s_n%d_decay_random" %(filename,n))
+    savefig("plots/nrmse_i/noise/%s_n%d_tau_%d" %(filename,n,tau))
     show()
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-    plot_temporal_lines(X,Y, n,testLen,filename, save=False)
+    plot_temporal_lines(X,Y, n,testLen,filename, tau, "noise", save=True)
     
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-    plot_temporal_lines(X,Y, n, 50,filename, save=False)
+    plot_temporal_lines(X,Y, n, 50,filename, tau, "noise",save=True)
 
 
 # In[ ]:
@@ -813,14 +818,14 @@ for tau in range(1,11):
     plot_temporal_lines(X,Y, n, 50,filename, save=False)
 
 
-# In[46]:
+# In[27]:
 
 
-for n in range(10):
-    X_by_file, Y_by_file, NRMSE_by_file,MI_by_file=testing_gene_net_euler("Dataset1/", tau,c,n)
+for n in [0,1,2,5,50]:
+    X_by_file, Y_by_file, NRMSE_by_file,MI_by_file=testing_gene_net_euler("Dataset1/", tau=150,c=0.01,n=n)
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
-    plot_dict_by_file(NRMSE_by_file,n,save=False)
+    plot_dict_by_file(NRMSE_by_file,n,tau,"noise",save=True)
 
 
 # In[ ]:
@@ -842,14 +847,14 @@ print("With derivatives")
 X_by_file, Y_by_file, NRMSE_by_file, MI_by_file=testing_gene_net_derivative("Dataset1/", a,b,c,0)
 
 
-# In[ ]:
+# In[33]:
 
 
-for n in [0,1,2,5,10,25]:
+for n in [0,1,2,5,50]:
     X_by_file, Y_by_file, NRMSE_by_file,MI_by_file=testing_gene_net_derivative("Dataset1/", a,b,c,n)
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
-    plot_dict_by_file(NRMSE_by_file,n,save=False)
+    plot_dict_by_file(NRMSE_by_file,n,"none","rossler",save=True)
 
 
 # In[ ]:
@@ -867,37 +872,38 @@ plot_dict_i("DBTBS", nrmse_i)
 show()
 
 
-# In[ ]:
+# In[35]:
 
 
 #rango de n
+print(c)
 
 
-# In[43]:
+# In[34]:
 
 
-file=csv_files[2]
+file=csv_files[0]
 filename=file[file.index("list")+5:file.index(".csv")]
 
-for n in [0,1,2,3,25,30]:
+for n in [0,1,2,5,50]:
     X,Y,nrmse_i,mi_i=testing_gene_net_derivative_file("Dataset1",file,a=a,b=b,c=c,n=n)
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
     title("n="+str(n))
     plot_dict_i(filename, nrmse_i)
-    savefig("plots/nrmse_i/%s_n%d_decay_random" %(filename,n))
+    savefig("plots/nrmse_i/rossler/%s_n%d" %(filename,n))
     show()
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-    plot_temporal_lines(X,Y, n, testLen,filename)
+    plot_temporal_lines(X,Y, n, testLen,filename,"none", "rossler")
     
     
     figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-    plot_temporal_lines(X,Y, n, 50,filename)
+    plot_temporal_lines(X,Y, n, 50,filename,"none", "rossler")
    
 
 
-# In[38]:
+# In[ ]:
 
 
 file=csv_files[3]
@@ -921,7 +927,7 @@ for n in [0,1,2,5,10,20]:
    
 
 
-# In[39]:
+# In[ ]:
 
 
 file=csv_files[3]
@@ -945,7 +951,7 @@ for n in [0,1,2,5,10,20]:
    
 
 
-# In[45]:
+# In[ ]:
 
 
 for n in [1,0,2,5,10,25]:
@@ -955,7 +961,7 @@ for n in [1,0,2,5,10,25]:
     plot_dict_by_file(NRMSE_by_file,n,save=False)
 
 
-# In[28]:
+# In[ ]:
 
 
 #MUTUAL INFO
