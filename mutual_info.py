@@ -9,7 +9,8 @@ from sklearn.metrics import normalized_mutual_info_score
 import numpy as np
 import random as rand
 import scipy
-
+from math import sqrt
+print("binning and sqrt")
 
 
 
@@ -32,8 +33,7 @@ def entropy(x,k=3,base=2):
 
 
 def calc_MI_npeet(x,y):
-    return ee.mi(x.reshape((x.shape[0],1)), y.reshape((y.shape[0],1)), base=2)/entropy(x.reshape((x.shape[0],1)))
-
+    return ee.mi(x.reshape((x.shape[0],1)), y.reshape((y.shape[0],1)), base=2)
 
 
 #binning
@@ -47,12 +47,13 @@ def calc_MI_binning(x, y):
     bins=sqrt(x.shape[0]/5)
     c_xy = np.histogram2d(x, y, bins)[0]
     mi = mutual_info_score(None, None, contingency=c_xy)
-    return mi/entropy_binning(c_xy)
+    return mi
 
 
 #memory-capacity
-def memory_capacity_n(Yt, Xt,n):
+def memory_capacity_n(Yt, Xt,startLen,miLen):
+    print("mi binning")
     MI_i={}
-    for i in range(200+1):
-        MI_i[i]=calc_MI_npeet(Yt[0,300:900],Xt[300-i:900-i]) 
+    for i in range(200):
+        MI_i[i]=calc_MI_binning(Xt[startLen-i:startLen+miLen-i],Yt[0,0:miLen]) 
     return MI_i
