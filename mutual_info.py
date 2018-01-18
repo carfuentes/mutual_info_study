@@ -10,7 +10,11 @@ import numpy as np
 import random as rand
 import scipy
 from math import sqrt
-print("binning and sqrt")
+
+import pandas as pd
+import scipy as sc
+
+print("normalized de verdad")
 
 
 
@@ -33,10 +37,16 @@ def entropy(x,k=3,base=2):
 
 
 def calc_MI_npeet(x,y):
-    return ee.mi(x.reshape((x.shape[0],1)), y.reshape((y.shape[0],1)), base=2)
+    return ee.mi(x.reshape((x.shape[0],1)), y.reshape((y.shape[0],1)), base=2)/entropy(y.reshape((x.shape[0],1)))
 
 
 #binning
+
+def ent(data):
+    p_data= data.value_counts()/len(data) # calculates the probabilities
+    entropy=sc.stats.entropy(p_data)  # input probabilities to get the entropy 
+    return entropy
+
 def entropy_binning(c_xy):
     c_normalized = c_xy/np.sum(c_xy)
     c_normalized = c_normalized[np.nonzero(c_normalized)]
@@ -47,12 +57,12 @@ def calc_MI_binning(x, y):
     bins=sqrt(x.shape[0]/5)
     c_xy = np.histogram2d(x, y, bins)[0]
     mi = mutual_info_score(None, None, contingency=c_xy)
-    return mi
+    c_xx=np.histogram2d(x,x,bins)[0]
+    return mi/entropy_binning(c_xx)
 
 
 #memory-capacity
 def memory_capacity_n(Yt, Xt,startLen,miLen):
-    print("mi binning")
     MI_i={}
     for i in range(200):
         MI_i[i]=calc_MI_binning(Xt[startLen-i:startLen+miLen-i],Yt[0,0:miLen]) 
