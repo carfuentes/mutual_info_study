@@ -2,7 +2,6 @@
 import networkx as nx
 
 
-
 #functions
 
 #networkx 1.10
