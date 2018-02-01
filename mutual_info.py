@@ -13,8 +13,8 @@ from math import sqrt
 
 import pandas as pd
 import scipy as sc
+from parameters import startLen
 
-print("normalized de verdad")
 
 
 

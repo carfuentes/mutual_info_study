@@ -17,6 +17,9 @@ Untitled*.ipynb
 #Datasets
 Dataset*/
 
+#julia code 
+julia-notebook/
+
 # Distribution / packaging
 .Python
 env/
