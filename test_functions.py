@@ -9,9 +9,8 @@ from mutual_info import memory_capacity_n
 from nrmse_calc import nrmse_n
 
 #functions
-def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_range, nrmse, noise, euler=True, save=False, single=True, gaussian=False):
+def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_range, nrmse, noise, euler=True, save=False, single=True, gaussian=False, notebook=False):
     #init
-    FWHM=None
     print(file_path)
     filename=file_path[file_path.index("list")+5:file_path.index(".csv")]
 
@@ -27,16 +26,16 @@ def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_
     #X=net.u
     #print(X.shape)
 
-    
-    if noise:
-        print("Autocorrelation of generated noise")
-        autocorr=autocorrelation(net.u)
-        exponential_fitting(autocorr)
-    
-    #plot reservoir units activations
-    figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-    title("Reservoir activations")
-    plot(net.X[2:20,100:200].T)
+    if notebook:
+        #plot reservoir units activations
+        figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
+        title("Reservoir activations")
+        plot(net.X[2:20,100:200].T)
+        
+        if noise:
+            print("Autocorrelation of generated noise")
+            autocorr=autocorrelation(net.u)
+            exponential_fitting(autocorr)
     
     #train for n steps delay
     print("Training network...")
@@ -49,7 +48,7 @@ def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_
         net.calculate_weights_derivative(initLen,subsetLen,m,n)
         net.run_predictive_derivative(testLen,subsetLen,initLen,m)
     
-        if noise and n==0:
+        if noise and n==0 and notebook:
             print("Autocorrelation of predicted noise")
             autocorr=autocorrelation(net.Y.reshape(net.Y.shape[1]))
             exponential_fitting(autocorr)
@@ -60,36 +59,27 @@ def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_
         #Plots
         print("%d trained to n =%d delay FINISHED" %(net.res_size,n))
         
-        if single:
-            figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-            title("n="+str(n))
-
-            if nrmse:
-                print("Plot nrmse")
-                plot_dict_i(filename, nrmse_by_n[n],MImax_n,n)
-                if save:
-                    savefig("plots/%s/%s_n%d_tau_%d" %(folder,filename,n,tau))
-            else:
-                print("Plot mi")
-                FWHM=plot_dict_i(filename, mi_by_n[n],MImax_n,n,nrmse=False,gaussian=gaussian)
-                
-            
-
+        if nrmse:
+            plot_dict_i(filename, nrmse_by_n[n],MImax_n,n,nrmse,single,notebook)
+        else:
+            plot_dict_i(filename, mi_by_n[n],MImax_n,n,nrmse,single,notebook)
+        
+        if notebook:
             figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
             plot_temporal_lines(net.u,net.Y, n,testLen-initLen,filename, tau, folder, save)
-
+            
             figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
             plot_temporal_lines(net.u,net.Y, n, 50,filename, tau, folder ,save)
-
+        
         if not single:
             Y=net.Y
             Y_n[n]=Y
 
     if single:
-        return net,nrmse_by_n,mi_by_n,MImax_n,FWHM
+        return net,nrmse_by_n,mi_by_n,MImax_n
     if not single:
         X=net.u
-        return net,X,Y_n,nrmse_by_n,mi_by_n,filename,MImax_n,FWHM
+        return net,X,Y_n,nrmse_by_n,mi_by_n,filename,MImax_n
 
 
 def test_all(directory,folder,spectral_radius, n_range, nrmse, noise, euler=True, save=False):

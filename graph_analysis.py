@@ -13,7 +13,7 @@ def autocorrelation(x):
     return result/result[0]
 
 def func(x, a, b, c):
-    return a * np.exp(-1/b * x) + c
+    return a * np.exp(float(-1/b) * x) + c
 
 def exponential_fitting(x,MI=False):
     if MI: #x is MI
@@ -32,15 +32,20 @@ def exponential_fitting(x,MI=False):
     legend()
     return popt
 
-def spline_plotting(x,y):
+def spline_plotting(data,notebook=False):
+    x=data.keys()
+    y=data.values()
     spline = UnivariateSpline(x, y-np.max(y)/2, s=0)
     r1, r2 = spline.roots() # find the roots
     FWHM=abs(r1-r2)
     print("r1=%f and r2=%f"%(r1,r2))
     print("FWHM",FWHM)
-    plot(x, y)
-    plot(r1,0,marker='o')
-    plot(r2,0,marker='o')
-    axvspan(r1, r2, facecolor='g', alpha=0.5)
-    show()
+
+    if notebook:
+        plot(x, y)
+        plot(r1,0,marker='o')
+        plot(r2,0,marker='o')
+        axvspan(r1, r2, facecolor='g', alpha=0.5)
+        show()
+    
     return FWHM

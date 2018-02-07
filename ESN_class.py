@@ -16,8 +16,8 @@ from parameters import tau, c_n
 @numba.jit(nopython=True)
 def colored_noise_euler_integration(res_size,decay,Win,W,x_0, u_0, tau, c, t_stop, dt=0.001):
     np.random.seed(42)
-    mu=np.exp(-dt/tau)
-    sigma= sqrt( ((c * tau)/2) * (1-mu**2) )
+    mu=np.exp(float(-dt/tau))
+    sigma= sqrt( (float(c * tau)/2) * (1-mu**2) )
     
     
     t = np.linspace(0, t_stop, int(t_stop/dt))
@@ -83,7 +83,7 @@ class ESN(object):
         self.Win[:,0]=np.random.uniform(size=(self.res_size,))*beta_scaling
         self.W0 = np.squeeze(np.asarray(self.W0))
         radius = np.max(np.abs(np.linalg.eigvals(self.W0)))
-        self.W= (self.spectral_radius/radius)*self.W0
+        self.W= (float(self.spectral_radius/radius))*self.W0
         return self.W
     
     def dx_dt(self, uyz_x,t,a,b,c,decay):

@@ -1,18 +1,20 @@
 #imports
 from matplotlib.pyplot import *
 from parameters import startLen
+from graph_analysis import spline_plotting
 
 #functions
 
-def plot_dict_i(key,dict_i,MImax_n,n,nrmse=True, single=True, gaussian=False):
+def plot_dict_i(key,dict_i,MImax_n,n,nrmse=True, single=True, notebook=False):
     x=[]
     y=[]
-    FWHM=0
     
     if nrmse:
+        print("Plot nrmse")
         point=min(dict_i, key=dict_i.get)
         print(key,"=> min=",point, "value", dict_i[point])
     else:
+        print("Plot mi")
         point=max(dict_i, key=lambda y: abs(dict_i[y]))
         print(key,"=> max=",point)
         MImax_n[n]=abs(dict_i[point])
@@ -21,24 +23,24 @@ def plot_dict_i(key,dict_i,MImax_n,n,nrmse=True, single=True, gaussian=False):
         x.append(i)
         y.append(value)
     
-    plot(x,y,"-o",label=key)
-    plot(point,dict_i[point],marker='o')
+    if notebook:
+        figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
+        title("n="+str(n))
+        plot(x,y,"-o",label=key)
+        plot(point,dict_i[point],marker='o')
     
     
-    if single:
-        xlabel("i=[0,%d]"%(x[-1]))
+        if single:
+            xlabel("i=[0,%d]"%(x[-1]))
         
-        if nrmse:
-            ylabel("NRMSE(X(t-i), Y(t))")
-        else:
-            ylabel("MI(X(t-i), Y(t))")
-    if gaussian:
-        FWHM = spline_plotting(x,y)
-    
-    return FWHM
+            if nrmse:
+                ylabel("NRMSE(X(t-i), Y(t))")
+            else:
+                ylabel("MI(X(t-i), Y(t))")
 
 
-def plot_dict_by_file(dict_by_file,n,tau,folder,nrmse=True,save=True,block=True):
+
+def plot_dict_by_file(dict_by_file,n,tau,folder,nrmse=True,save=True):
     for file in dict_by_file.keys():
         plot_dict_i(file, dict_by_file[file][n],nrmse=nrmse,single=False)
     legend(loc='upper left')

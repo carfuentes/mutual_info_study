@@ -21,11 +21,11 @@ i_max=200
 #Test parametes
 nrmse= True
 noise=True
-gaussian=False
+spline=True
 euler=True
 save=False
 single=True
-shell=True
+notebook=False
 
 
 
