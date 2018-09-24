@@ -25,7 +25,7 @@ class ESN(object):
         self.x0_e=np.random.rand(self.res_size)
         self.x0=np.insert(np.random.rand(self.res_size)*10,0,[1.0,1.0,1.0])
         self.u0=0
-        self.decay=np.random.rand(self.res_size).reshape((self.res_size,1))
+        self.decay=np.random.gamma(5.22,0.017,size=self.res_size).reshape((self.res_size,1))
         self.u=None
         self.x_act=None
 
@@ -44,7 +44,7 @@ class ESN(object):
         return nx.to_numpy_matrix(net)
     
     def initialize(self,i_scaling,beta_scaling): 
-        np.random.seed(42)
+        np.random.seed(tau)
         print("factor i= %f"%i_scaling)
         print("factor beta= %f"%beta_scaling)
         self.Win=np.random.uniform(size=(self.res_size,1+self.in_size))*i_scaling
@@ -127,28 +127,6 @@ class ESN(object):
         
         return self.X
     
-    def collect_states_in_subsets(self, m, init_len, subset_len, test_len, euler, noise,dt=0.001):
-        self.X=np.zeros((self.res_size+self.in_size+1, 1))
-        self.u=np.array([])
-        self.x_act=np.zeros((1,self.res_size))
-        print(self.x_act.shape)
-        print(self.X.shape)
-        for subset in range(m):
-            print("Subset ", str(subset+1))
-            X, u, x_act= self.collect_states_derivative(init_len,subset_len,euler,noise,dt)
-            print(x_act.shape)
-            print(X.shape)
-            self.X=np.concatenate((self.X,X),axis=1)
-            self.u=np.append(self.u,u)
-            self.x_act=np.concatenate((self.x_act,x_act),axis=0)
-            
-        print("Test subset")
-        X, u, x_act= self.collect_states_derivative(init_len,test_len,euler,noise,dt)
-        #self.X=np.concatenate((self.X,X),axis=1)
-        self.u=np.append(self.u,u)
-        self.x_act=np.concatenate((self.x_act,x_act),axis=0)
-        self.X=self.X[:,1:]
-        self.x_act=self.x_act[1:,:]
     
     def collect_states_derivative(self, init_len, train_len, euler, noise, dt=0.001):
         X=np.zeros((self.res_size+self.in_size+1, train_len-init_len))
@@ -220,6 +198,7 @@ class ESN(object):
                
         return self.X 
 
+
     def calculate_weights_derivative_OLD(self,init_len, train_len, n, beta=1e-8 ):
         Y=np.array([self.u[init_len-n:train_len-n]])
         X_T=self.X.T
@@ -233,29 +212,3 @@ class ESN(object):
             u_concat=self.u[t]
             y = np.dot( self.Wout, np.vstack((1,u_concat,x_concat)) )
             self.Y[:,t-train_len] = y 
-        
-    def calculate_weights(self, data, init_len, train_len,beta=1e-8 ):
-        Y=data[None,init_len+1:train_len+1]
-        X_T=self.X.T
-        self.Wout= np.dot ( np.dot(Y, X_T), np.linalg.inv(np.dot(self.X,X_T) + beta * np.eye(self.res_size+self.in_size+1)))
-        return self.Wout
-    
-    def calculate_weights_derivative(self,init_len, subset_len, m, n, beta=1e-8 ):
-        start_len= (subset_len-init_len) * m
-        Y=np.array([self.u[init_len-n:start_len-n]])
-        X=self.X[:,init_len:]
-        X_T=X.T
-        self.Wout= np.dot ( np.dot(Y, X_T), np.linalg.inv(np.dot(X,X_T) + beta * np.eye(self.res_size+self.in_size+1))) #w= y*x_t*(x*x_t + beta*I)^-1
-        return self.Wout
-    
-    def run_predictive_derivative(self, test_len, subset_len,init_len,m):
-        self.Y = np.zeros((self.out_size,test_len))
-        start_len= (subset_len-init_len) * m
-        for t in range(start_len,start_len+(test_len-init_len)):
-            x_concat=self.x_act[t,:].reshape(self.x_act[t,:].shape[0],1)
-            u_concat=self.u[t]
-            y = np.dot( self.Wout, np.vstack((1,u_concat,x_concat)) )
-            self.Y[:,t-start_len] = y
-           
-        
-        return self.Y

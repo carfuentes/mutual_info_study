@@ -1,5 +1,5 @@
 from test_functions import test
-from parameters import rho, i_scaling, beta_scaling, n_range, nrmse, noise, gaussian, euler, save, single, tau, c_n, shell
+from parameters import *
 
 ## PARAMETERS
 
@@ -10,7 +10,7 @@ folder="noise"
 
 
 ## RUN
-net,nrmse_by_n,mi_by_n,MImax_n,FWHM= test(directory,file_path,folder,rho, i_scaling,beta_scaling,n_range, nrmse, noise, euler, save, single, gaussian)
+net,Y_n,nrmse_by_n,mi_by_n,MImax_n= test(directory,file_path, folder, rho, i_scaling,beta_scaling,n_range, nrmse, noise, euler=True, save=False, single=True, gaussian=False, notebook=True)
 
 ## OUTPUT
 with open("out_file.txt","w") as f_out:
