@@ -33,8 +33,8 @@ def exponential_fitting(x,MI=False):
     return popt
 
 def spline_plotting(data,notebook=False):
-    x=data.keys()
-    y=data.values()
+    x=list(data.keys())
+    y=list(data.values())
     spline = UnivariateSpline(x, y-np.max(y)/2, s=0)
     r1, r2 = spline.roots() # find the roots
     FWHM=abs(r1-r2)

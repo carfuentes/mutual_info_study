@@ -13,7 +13,7 @@ from math import sqrt
 
 import pandas as pd
 import scipy as sc
-from parameters import startLen
+print("changes")
 
 
 
@@ -37,13 +37,12 @@ def entropy(x,k=3,base=2):
 
 
 def calc_MI_npeet(x,y):
-    return ee.mi(x.reshape((x.shape[0],1)), y.reshape((y.shape[0],1)), base=2)/entropy(y.reshape((x.shape[0],1)))
-
+    return ee.mi(x.reshape((x.shape[0],1)), y.reshape((y.shape[0],1)), base=2)
 
 #binning
 
 def ent(data):
-    p_data= data.value_counts()/len(data) # calculates the probabilities
+    p_data= pd.Series(data).value_counts()/len(data) # calculates the probabilities
     entropy=sc.stats.entropy(p_data)  # input probabilities to get the entropy 
     return entropy
 
@@ -57,13 +56,14 @@ def calc_MI_binning(x, y):
     bins=sqrt(x.shape[0]/5)
     c_xy = np.histogram2d(x, y, bins)[0]
     mi = mutual_info_score(None, None, contingency=c_xy)
-    c_xx=np.histogram2d(x,x,bins)[0]
-    return mi/entropy_binning(c_xx)
+    #c_xx=np.histogram2d(x,x,bins)[0]
+    return mi/sqrt(ent(x)*ent(y))
 
 
 #memory-capacity
-def memory_capacity_n(Yt, Xt,startLen,miLen):
+def memory_capacity_n(Yt, Xt,startLen,miLen,i_max,n_max):
     MI_i={}
-    for i in range(200):
-        MI_i[i]=calc_MI_binning(Xt[startLen-i:startLen+miLen-i],Yt[0,0:miLen]) 
+    for i in range(i_max+1):
+        MI_i[i]=calc_MI_binning(Xt[startLen+n_max-i:startLen+n_max+miLen-i],Yt[0,n_max:miLen+n_max]) 
     return MI_i
+

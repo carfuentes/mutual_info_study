@@ -5,17 +5,20 @@ c_n=0.01
 #Time lengths
 errorLen = 500
 trainLen=10000
-testLen=1000
+testLen=5000
 initLen=200
 subsetLen=1200
 m=10
 startLen=(subsetLen-initLen)*m
+trainLen=10000
+miLen=1000
 
 #Net parameters
 rho=1
 i_scaling=0.5
 beta_scaling=0.8
-n_range=list(range(100))
+n_max=200
+n_range=list(range(n_max))
 i_max=200
 
 #Test parametes

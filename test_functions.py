@@ -4,7 +4,7 @@ from plot_functions import *
 from graph_analysis import *
 import numpy as np
 import os
-from parameters import tau,i_max,errorLen, trainLen, testLen, initLen, subsetLen, m, startLen
+from parameters import *
 from mutual_info import memory_capacity_n
 from nrmse_calc import nrmse_n
 
@@ -22,7 +22,7 @@ def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_
     print("SR", net.spectral_radius)
     
     #Choose input and collect states
-    net.collect_states_in_subsets(m, initLen, subsetLen, testLen, euler, noise,dt=0.001)
+    net.collect_states_derivative_OLD(initLen, trainLen, testLen, euler, noise,dt=0.001)
     #X=net.u
     #print(X.shape)
 
@@ -45,16 +45,16 @@ def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_
     MImax_n={}
     for n in n_range:
         print("n=",n)
-        net.calculate_weights_derivative(initLen,subsetLen,m,n)
-        net.run_predictive_derivative(testLen,subsetLen,initLen,m)
+        net.calculate_weights_derivative_OLD(initLen,trainLen,n)
+        net.run_predictive_derivative_OLD(testLen,trainLen)
     
         if noise and n==0 and notebook:
             print("Autocorrelation of predicted noise")
             autocorr=autocorrelation(net.Y.reshape(net.Y.shape[1]))
             exponential_fitting(autocorr)
             
-        mi_by_n[n]=memory_capacity_n(net.Y, net.u,(subsetLen-initLen)*m,500)
-        nrmse_by_n[n]=nrmse_n(net.Y,net.u,i_max,errorLen,(subsetLen-initLen)*m)
+        mi_by_n[n]=memory_capacity_n(net.Y, net.u,trainLen,miLen,i_max,n_max)
+        nrmse_by_n[n]=nrmse_n(net.Y,net.u,i_max,errorLen,trainLen,n_max)
         
         #Plots
         print("%d trained to n =%d delay FINISHED" %(net.res_size,n))
