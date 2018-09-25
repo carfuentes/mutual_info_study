@@ -18,7 +18,8 @@ rho=1
 i_scaling=0.5
 beta_scaling=0.8
 n_max=200
-n_range=list(range(n_max))
+#n_range=list(range(n_max))
+n_range=[0,5,10]
 i_max=200
 
 #Test parametes

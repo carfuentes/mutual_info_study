@@ -23,7 +23,7 @@ class ESN(object):
         self.Y=None
         self.x=np.zeros((self.res_size,1))
         self.x0_e=np.random.rand(self.res_size)
-        self.x0=np.insert(np.random.rand(self.res_size)*10,0,[1.0,1.0,1.0])
+        self.x0=np.insert(np.random.rand(self.res_size)*10,0,[0])
         self.u0=0
         self.decay=np.random.gamma(5.22,0.017,size=self.res_size).reshape((self.res_size,1))
         self.u=None
@@ -65,6 +65,16 @@ class ESN(object):
         dz_dt=b+z*(u-c)
         dx_dt=self.dx_act_dt(x,u**2)
         return np.insert(dx_dt,0,[du_dt,dy_dt,dz_dt])
+
+    def dx_dnoise_dt(self, u_x ,t,mu,sigma):
+        u=u_x[0]
+        x=u_x[1:]
+        
+        
+        du_dt= u * mu + sigma * np.random.normal()
+        
+        dx_dt=self.dx_act_dt(x,u**2)
+        return np.insert(dx_dt,0,[du_dt])
     
     def du_dt_rossler(self,z,y):
         return -z-y
@@ -162,6 +172,26 @@ class ESN(object):
             X[:,t-init_len]= np.vstack((1,u_concat,x_concat))[:,0]
                
         return X, u[init_len:], x_act[init_len:,:]
+
+
+    def collect_states_ODEINT_NOISE(self, init_len, train_len, test_len, euler, noise,dt=0.001):
+        self.X=np.zeros((self.res_size+self.in_size+1, train_len-init_len))
+        print("Collecting states with NOISE input using odeint built in...")
+        print(tau)
+        t=np.arange(train_len+test_len)
+        c=(1/tau)**2
+        mu=np.exp(-dt/tau)
+        sigma= sqrt( ((c * tau)/2) * (1-mu**2) )
+        print("Parameters: c=  %f mu= %f sigma= %f"%(c,mu,sigma))
+        u_x=scipy.integrate.odeint(self.dx_dnoise_dt,self.x0,t,args=(mu,sigma))
+        self.u=u_x[:,0]
+        self.x_act=u_x[:,1:]
+        for t in range(init_len,train_len):
+            x_concat=self.x_act[t,:].reshape(self.x_act[t,:].shape[0],1)
+            u_concat=self.u[t]
+            self.X[:,t-init_len]= np.vstack((1,u_concat,x_concat))[:,0]
+               
+        return self.X  
 
     def collect_states_derivative_OLD(self, init_len, train_len, test_len, euler, noise,dt=0.001):
         self.X=np.zeros((self.res_size+self.in_size+1, train_len-init_len))

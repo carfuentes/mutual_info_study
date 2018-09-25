@@ -14,7 +14,7 @@ from nrmse_calc import nrmse_n
     
 def printTime(*args):
 
-    print datetime.now(),"".join(map(str,args))
+    print( datetime.now(),"".join(map(str,args)))
 
 def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_range, nrmse, noise, euler=True, save=False, single=True, gaussian=False, notebook=True):
     #init
@@ -29,7 +29,7 @@ def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_
     printTime("SR", net.spectral_radius)
     
     #Choose input and collect states
-    net.collect_states_derivative_OLD(initLen, trainLen, testLen, euler, noise,dt=0.001)
+    net.collect_states_ODEINT_NOISE(initLen, trainLen, testLen, euler, noise,dt=0.001)
     #X=net.u
     printTime(net.u.shape)
     
@@ -53,7 +53,7 @@ def test(directory,file_path, folder, spectral_radius, i_scaling,beta_scaling,n_
         net.calculate_weights_derivative_OLD(initLen,trainLen,n)
         net.run_predictive_derivative_OLD(testLen,trainLen)
     
-        if noise and n==0:
+        if noise=='ahora no' and n==0:
             printTime("Autocorrelation of predicted noise")
             autocorr=autocorrelation(net.Y.reshape(net.Y.shape[1]))
             exponential_fitting(autocorr,exp_func)
